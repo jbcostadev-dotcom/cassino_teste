@@ -1,0 +1,24 @@
+rota admin
+/dash 
+ex: meusite.com/dash
+
+usuario administrativo
+email: admin@eu.com
+senha: Resident4567#
+senha2fa: 6177
+
+lembrando pode alterar a senha2fa pelo arquivo env 
+e a rota do admin tbm 
+
+
+partice do meu grupo do telegram
+https://t.me/jcts99
+
+participe do meu grupo do whatsapp 
+https://chat.whatsapp.com/C2R0I5C8Edk3DbcZQ9OmUk
+
+participe do forum da ecompag
+https://chat.whatsapp.com/KJfzzoFs4U35XFvsL9hO2M
+
+compre seu sistema com o número abaixo 100% qualidade e satisfação 
+45999057184
