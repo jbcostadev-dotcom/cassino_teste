@@ -1511,6 +1511,202 @@
         });
     </script>
 @endif
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Helper to check login status dynamically from DOM
+            const checkIsLogged = () => {
+                // Case insensitive check helper
+                const hasText = (selector, texts) => {
+                    const elements = Array.from(document.querySelectorAll(selector));
+                    return elements.some(el => {
+                        const content = el.textContent.trim().toLowerCase();
+                        return texts.some(t => content === t.toLowerCase() || content.includes(t.toLowerCase()));
+                    });
+                };
+
+                // Signals for Logged Out
+                const isLoggedOut = hasText('button, a', ['Entrar', 'Log in', 'Login']);
+                if (isLoggedOut) return false;
+
+                // Signals for Logged In
+                const isLoggedIn = hasText('button, a, span', ['Depósito', 'Deposit', 'Carteira', 'Wallet', 'Sair', 'Sign out', 'Desconectar']);
+                if (isLoggedIn) return true;
+
+                // Fallback to server-side state (injected at render time)
+                return {{ auth()->check() ? 'true' : 'false' }};
+            };
+
+            const hideSports = () => {
+                const listItems = document.querySelectorAll('li');
+                listItems.forEach(li => {
+                    const text = li.textContent.trim();
+                    if (text === 'Esportes' || text === 'Sports') {
+                        li.style.setProperty('display', 'none', 'important');
+                    }
+                });
+            };
+
+            hideSports();
+
+            const observer = new MutationObserver(hideSports);
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            // Script to update menu items (Affiliate, Sports, Wallet, All Games, etc.)
+            const updateMenu = () => {
+                const isLogged = checkIsLogged();
+                
+                // --- Logic for Bottom Menu Buttons ---
+                const buttons = document.querySelectorAll('button.inline-flex.flex-col.items-center.justify-center.px-5.group');
+                buttons.forEach(btn => {
+                    const textSpan = btn.querySelector('span');
+                    if (!textSpan) return;
+                    
+                    const text = textSpan.textContent.trim();
+                    const isCustom = btn.classList.contains('custom-register-btn');
+                    const isSaque = text === 'Saque';
+                    const isCustomSaque = btn.classList.contains('custom-saque-btn');
+                    const isCarteira = text === 'Carteira';
+                    const isCustomCarteira = btn.classList.contains('custom-carteira-btn');
+
+                    // --- Logic for Affiliate/Register/Home Button ---
+                    // Target conditions
+                    const isTargetOriginal = !isCustom && (text === 'Afiliado' || text === 'Esportes' || text === 'Sports');
+                    const isTargetCustom = isCustom; // Always update custom buttons if state mismatches
+
+                    if (isTargetOriginal || isTargetCustom) {
+                        // Determine desired state
+                        const targetText = isLogged ? 'Início' : 'Registrar';
+                        
+                        // If custom and already correct, skip
+                        if (isCustom && text === targetText) return;
+
+                        // Create new button (clone or fresh)
+                        const newBtn = btn.cloneNode(true);
+                        if (!isCustom) newBtn.classList.add('custom-register-btn');
+                        
+                        // Update Text
+                        const span = newBtn.querySelector('span');
+                        if (span) span.textContent = targetText;
+                        
+                        // Update Icon
+                        const img = newBtn.querySelector('img');
+                        if (img) img.remove();
+                        
+                        // Remove existing SVG if any (from previous custom state)
+                        const oldSvg = newBtn.querySelector('svg');
+                        if (oldSvg) oldSvg.remove();
+
+                        // Create Icon
+                        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                        svg.setAttribute("viewBox", "0 0 24 24");
+                        svg.setAttribute("width", "25");
+                        svg.setAttribute("height", "25");
+                        svg.setAttribute("fill", "none");
+                        svg.setAttribute("stroke", "currentColor");
+                        svg.setAttribute("stroke-width", "2");
+
+                        if (isLogged) {
+                            // Home Icon
+                            svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />';
+                            
+                            // Click: Go to Home
+                            newBtn.onclick = (e) => {
+                                e.preventDefault();
+                                e.stopPropagation(); // Stop Vue events
+                                window.location.href = '/';
+                            };
+                        } else {
+                            // Register Icon
+                            svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />';
+                            
+                            // Click: Open Register
+                            newBtn.onclick = (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                const allButtons = Array.from(document.querySelectorAll('button, a'));
+                                const headerRegisterBtn = allButtons.find(el => {
+                                    const t = el.textContent.trim().toLowerCase();
+                                    return (t === 'registrar' || t === 'cadastrar' || t === 'register') && el !== newBtn;
+                                });
+
+                                if (headerRegisterBtn) {
+                                    headerRegisterBtn.click();
+                                } else {
+                                    window.location.href = '/register';
+                                }
+                            };
+                        }
+                        
+                        newBtn.prepend(svg);
+                        
+                        // Replace in DOM
+                        btn.parentNode.replaceChild(newBtn, btn);
+                        return; // Done with this button
+                    }
+
+                    // --- Logic for "Saque" Button Redirect ---
+                    if ((isSaque || isCustomSaque) && !btn.hasAttribute('data-saque-fixed')) {
+                        const newBtn = btn.cloneNode(true);
+                        newBtn.setAttribute('data-saque-fixed', 'true');
+                        newBtn.classList.add('custom-saque-btn');
+
+                        // Keep original content (icon/text) but override click
+                        newBtn.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.location.href = '/profile/wallet';
+                        };
+
+                        btn.parentNode.replaceChild(newBtn, btn);
+                        return;
+                    }
+
+                    // --- Logic for "Carteira" -> "Depósito" Rename and Redirect ---
+                    if ((isCarteira || isCustomCarteira) && !btn.hasAttribute('data-carteira-fixed')) {
+                        const newBtn = btn.cloneNode(true);
+                        newBtn.setAttribute('data-carteira-fixed', 'true');
+                        newBtn.classList.add('custom-carteira-btn');
+
+                        const span = newBtn.querySelector('span');
+                        if (span) span.textContent = 'Depósito';
+
+                        // Click: Go to Deposit
+                        newBtn.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.location.href = '/profile/deposit';
+                        };
+
+                        btn.parentNode.replaceChild(newBtn, btn);
+                        return;
+                    }
+                });
+
+                // --- Logic for "All games" -> "Todos os Jogos" Rename (Sidebar) ---
+                const allGamesLinks = document.querySelectorAll('a[href*="/casino/provider/all/category/all-games"]');
+                allGamesLinks.forEach(link => {
+                    // Check if text is "All games"
+                    const span = link.querySelector('span');
+                    if (span && span.textContent.trim() === 'All games' && !link.hasAttribute('data-all-games-fixed')) {
+                        const newLink = link.cloneNode(true);
+                        newLink.setAttribute('data-all-games-fixed', 'true');
+                        
+                        const newSpan = newLink.querySelector('span');
+                        if (newSpan) newSpan.textContent = 'Todos os Jogos';
+                        
+                        link.parentNode.replaceChild(newLink, link);
+                    }
+                });
+            };
+
+            // Run initially and observe
+            updateMenu();
+            const registerObserver = new MutationObserver(updateMenu);
+            registerObserver.observe(document.body, { childList: true, subtree: true });
+        });
+    </script>
 </body>
 
 </html>
