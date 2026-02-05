@@ -1367,6 +1367,12 @@
             ;
         }
 
+        /* Ocultar seletor de linguagem */
+        button[style*="--footer-button-background-language"],
+        div:has(> button[style*="--footer-button-background-language"]) {
+            display: none !important;
+        }
+
         :is(.dark .bg-base) {
             background-color:
                 {{ $custom['background_geral'] }}
