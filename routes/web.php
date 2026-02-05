@@ -96,5 +96,12 @@ include_once(__DIR__ . '/groups/gateways/ondapay.php');
 /// SOCIAL
 /// include_once(__DIR__ . '/groups/auth/social.php');
 
+Route::get('/profile/deposit', function () {
+    if (!auth()->check()) {
+        return redirect('/login');
+    }
+    return view('layouts.app');
+});
+
 // APP
 include_once(__DIR__ . '/groups/layouts/app.php');
